@@ -442,6 +442,11 @@ def check_files():
         print("Creating empty snacktime's settings.json...")
         dataIO.save_json(f, {})
 
+    f = "data/snacktime/snacks.json"
+    if not dataIO.is_valid_json(f):
+        print("Creating empty snacktime's snacks.json...")
+        dataIO.save_json(f, {})
+
     settings = dataIO.load_json(f)
     dirty = False
     for unit_settings in settings.values():  # consistency check
