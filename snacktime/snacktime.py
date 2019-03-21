@@ -24,7 +24,7 @@ class Snacktime:
             self.loop = asyncio.get_event_loop()
         except:
             self.loop = None
-        self.econ = None
+        self.sm = None
         #self.msgTime = None
         self.snackSchedule = {}
         self.snacktimePrediction = {}
@@ -39,6 +39,8 @@ class Snacktime:
         self.repeatMissedSnacktimes = dataIO.load_json("data/snacktime/repeatMissedSnacktimes.json")
         self.channels = dataIO.load_json("data/snacktime/channels.json")
         self.settings = dataIO.load_json("data/snacktime/settings.json")
+        self.snacks = dataIO.load_json("data/snacktime/snacks.json")
+        self.currentSnack = None
         self.startPhrases = [
             "`ʕ •ᴥ•ʔ < It's snack time!`",
             "`ʕ •ᴥ•ʔ < I'm back with s'more snacks! Who wants!?`",
@@ -76,27 +78,27 @@ class Snacktime:
             "`ʕ •ᴥ•ʔ < I guess i'll just come back later..`"
         ]
         self.givePhrases = [
-            "`ʕ •ᴥ•ʔ < Here ya go, {0}, here's {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Alright here ya go, {0}, {1} pb for you!`",
-            "`ʕ •ᴥ•ʔ < Yeah! Here you go, {0}! {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Of course {0}! Here's {1} pb!`",
-            "`ʕ •ᴥ•ʔ < Ok {0}, here's {1} pb for you. Anyone else want some?`",
-            "`ʕ •ᴥ•ʔ < Alllright, {1} pb for {0}!`",
-            "`ʕ •ᴥ•ʔ < Hold your horses {0}! Alright, {1} pb for you :)`"
+            "`ʕ •ᴥ•ʔ < Here ya go, {0}, here's {1} {2}!`",
+            "`ʕ •ᴥ•ʔ < Alright here ya go, {0}, {1} {2} for you!`",
+            "`ʕ •ᴥ•ʔ < Yeah! Here you go, {0}! {1} {2}!`",
+            "`ʕ •ᴥ•ʔ < Of course {0}! Here's {1} {2}!`",
+            "`ʕ •ᴥ•ʔ < Ok {0}, here's {1} {2} for you. Anyone else want some?`",
+            "`ʕ •ᴥ•ʔ < Alright, {1} {2} for {0}!`",
+            "`ʕ •ᴥ•ʔ < Hold your horses {0}! Alright, {1} {2} for you :)`"
         ]
         self.lastsecondPhrases = [
-            "`ʕ •ᴥ•ʔ < Fine fine, {0}, I'll give you {1} of my on-the-road pb.. Cya!`",
-            "`ʕ •ᴥ•ʔ < Oh! {0}, you caught me right before I left! Alright, i'll give you {1} of my own pb`"
+            "`ʕ •ᴥ•ʔ < Fine fine, {0}, I'll give you {1} of my on-the-road {2}.. Cya!`",
+            "`ʕ •ᴥ•ʔ < Oh! {0}, you caught me right before I left! Alright, i'll give you {1} of my own {2}`"
         ]
         self.greedyPhrases = [
-            "`ʕ •ᴥ•ʔ < Don't be greedy now! you already got some pb {0}!`",
+            "`ʕ •ᴥ•ʔ < Don't be greedy now! you already got some snacks {0}!`",
             "`ʕ •ᴥ•ʔ < You already got your snacks {0}!`",
             "`ʕ •ᴥ•ʔ < Come on {0}, you already got your snacks! We gotta make sure there's some for errbody!`"
         ]
         self.nobankPhrases = [
-            "`ʕ •ᴥ•ʔ < You don't have a pb bank account, {0}! But here ya go, you can just eat these {1} pb jars!`",
-            "`ʕ •ᴥ•ʔ < Dang, {0}! You don't have a pb bank account. Are you just gonna eat these {1} pb jars?!`",
-            "`ʕ •ᴥ•ʔ < {0}, you don't really have a place to put these {1} pb jars, but I'll give em to you to eat here n now :)`"
+            "`ʕ •ᴥ•ʔ < You don't have a storage account, {0}! But here ya go, you can just eat these {1} {2}!`",
+            "`ʕ •ᴥ•ʔ < Dang, {0}! You don't have a storage account. Are you just gonna eat these {1} {2}?!`",
+            "`ʕ •ᴥ•ʔ < {0}, you don't really have a place to put these {1} {2}, but I'll give em to you to eat here n now :)`"
         ]
 
     #TODO:
@@ -217,6 +219,32 @@ class Snacktime:
         else:
             await self.bot.say("`ʕ •ᴥ•ʔ < You guys don't want snacks anymore? Alright, I'll stop comin around.`")
 
+    @snackset.command(pass_context=True)
+    async def addsnack(self, ctx, *snack):
+        scid = ctx.message.server.id+"-"+ctx.message.channel.id
+        if isinstance(snack, tuple):
+            snack = " ".join(snack)
+
+        if snack not in self.snacks:
+            self.snacks.append(snack)
+            dataIO.save_json("data/snacktime/snacks.json", self.snacks)
+            await self.bot.say("Successfully added snack: " + snack)
+        else:
+            await self.bot.say("Snack already in the snack list.")
+
+    @snackset.command(pass_context=True)
+    async def delsnack(self, ctx, *snack):
+        scid = ctx.message.server.id+"-"+ctx.message.channel.id
+        if isinstance(snack, tuple):
+            snack = " ".join(snack)
+
+        if snack in self.snacks:
+            self.snacks.remove(snack)
+            dataIO.save_json("data/snacktime/snacks.json", self.snacks)
+            await self.bot.say("Successfully removed snack: " + snack)
+        else:
+            await self.bot.say("Snack not in the snack list.")
+
     @commands.command(pass_context=True)
     async def snacktime(self, ctx):
         """Man i'm hungry! When's snackburr gonna get back with more snacks?"""
@@ -247,9 +275,10 @@ class Snacktime:
             return
         await self.bot.send_message(message.channel, randchoice(self.startPhrases))
         #set econ here? don't need to unset it.
-        self.econ = self.bot.get_cog('Economy')
+        self.sm = self.bot.get_cog('StorageManager')
         self.acceptInput[scid] = True
         self.alreadySnacked[scid] = []
+        self.currentSnack = randchoice(self.snacks)
         duration = self.settings[scid]["SNACK_DURATION"] + randint(-self.settings[scid]["SNACK_DURATION_VARIANCE"], self.settings[scid]["SNACK_DURATION_VARIANCE"])
         await asyncio.sleep(duration)
         #sometimes fails sending messages and stops all future snacktimes. Hopefully this fixes it.
@@ -290,7 +319,7 @@ class Snacktime:
                 return
 
         if message.author.id != self.bot.user.id:
-            self.econ = self.bot.get_cog('Economy')
+            self.sm = self.bot.get_cog('StorageManager')
             #if nobody has said anything since start
             if self.previousSpeaker.get(scid,None) == None:
                 self.previousSpeaker[scid] = message.author.id
@@ -364,18 +393,18 @@ class Snacktime:
                         self.alreadySnacked[scid].append(message.author.id)
                         await asyncio.sleep(randint(1,6))
                         snackAmt = randint(1,self.settings[scid]["SNACK_AMOUNT"])
-                        if self.econ.bank.account_exists(message.author):
+                        if self.sm.storage.storage_exists(message.author):
                             try:
                                 if self.acceptInput.get(scid,False):
-                                    await self.bot.send_message(message.channel, randchoice(self.givePhrases).format(message.author.name,snackAmt))
+                                    await self.bot.send_message(message.channel, randchoice(self.givePhrases).format(message.author.name,snackAmt, self.currentSnack))
                                 else:
-                                    await self.bot.send_message(message.channel, randchoice(self.lastsecondPhrases).format(message.author.name,snackAmt))
-                                self.econ.bank.deposit_credits(message.author, snackAmt)
+                                    await self.bot.send_message(message.channel, randchoice(self.lastsecondPhrases).format(message.author.name,snackAmt, self.currentSnack))
+                                self.sm.storage.deposit_items(message.author, self.currentSnack, snackAmt)
                             except:
-                                print("Failed to send message. " + message.author.name + " didn't get pb")
+                                print("Failed to send message. " + message.author.name + " didn't get snack")
 
                         else:
-                            await self.bot.send_message(message.channel, randchoice(self.nobankPhrases).format(message.author.name,snackAmt))
+                            await self.bot.send_message(message.channel, randchoice(self.nobankPhrases).format(message.author.name,snackAmt, self.currentSnack))
 
                 else:
                     more_phrases = ["more pl","i have some more","i want more","i have another","i have more","more snack"]
