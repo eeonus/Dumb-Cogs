@@ -428,9 +428,9 @@ class StorageManager:
 
 
 def check_folders():
-    if not os.path.exists("data/economy"):
-        print("Creating data/economy folder...")
-        os.makedirs("data/economy")
+    if not os.path.exists("data/storagemanager"):
+        print("Creating data/storagemanager folder...")
+        os.makedirs("data/storagemanager")
 
 
 def check_files():
